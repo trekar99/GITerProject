@@ -2,16 +2,18 @@
 
 Reglas de puntuación:
 
-**precio**: 0 (busca chollos) a 10 (lujo/sin limite).
+**luxury**: 0 (nada de lujo) a 10 (muy lujoso y exclusivo).
 
-**rural**: 0 (centro ciudad) a 10 (campo aislado).
+**safety**: 0 (muy insegura, peligro y delitos) a 10 (sin delincuencia ni problemas).
 
-**ocio**: 0 (no le interesa) a 10 (vida nocturna esencial).
+**nature**: 0 (zona metropolitana, sin natura) a 10 (zona rural/boscosa o con parques cerca).
 
-**seguridad**: 0 (le da igual) a 10 (prioridad absoluta).
+**nightlife**: 0 (tranquilo, sin bares, pubs, fiesta...) a 10 (muchos bares, pubs, discotecas...).
+
+**mobility**: 0 (sin conexiones ni transporte público) a 10 (muchas opciones de transporte).
 
 Texto del usuario: {text}
 
 OUTPUT OBLIGATORIO:
 Responde ÚNICAMENTE con un JSON válido. Sin explicaciones. Sin markdown.
-Ejemplo: {{"precio": 5, "rural": 2, "ocio": 8, "seguridad": 9}}
+Ejemplo: {{"luxury": 5, "safety": 2, "nature": 8, "nightlife": 9, "mobility": 4}}
