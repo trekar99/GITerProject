@@ -34,3 +34,6 @@ logs/
 dist/
 build/
 *.egg-info/
+
+-- Modelo clasificador --
+models/
