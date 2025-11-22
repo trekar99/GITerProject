@@ -1,0 +1,36 @@
+--- Python ---
+pycache/
+*.py[cod]
+*$py.class
+
+--- Entornos Virtuales ---
+venv/
+env/
+.venv/
+.env
+
+--- Variables de Entorno y Secretos (CRÍTICO) ---
+.env
+.env.local
+.env.*.local
+
+--- IDEs y Editores ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+--- Testing y Calidad de Código ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+--- Logs ---
+*.log
+logs/
+
+--- Distribución ---
+dist/
+build/
+*.egg-info/
