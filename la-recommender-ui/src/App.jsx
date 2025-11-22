@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Send, MapPin, Sliders, MessageSquare, Info, ChevronRight, Loader2, Shield, Trees, DollarSign, Music, Car } from 'lucide-react';
+import { Send, MapPin, Sliders, MessageSquare, Info, ChevronRight, Loader2, Shield, Trees, DollarSign, Music, Car, Trophy } from 'lucide-react';
 import { SimulatedAPI } from './services/api';
-import MapSVG from './components/MapSVG';
+import Map3D from './components/Map3D'; // Asegúrate de importar el nuevo mapa
 import SliderControl from './components/SliderControl';
 
 export default function App() {
     const [isOpen, setIsOpen] = useState(true);
-    const [viewState, setViewState] = useState('input');
+    const [viewState, setViewState] = useState('input'); // input | loading_params | tuning | loading_result | result
     const [chatText, setChatText] = useState('');
     const [parameters, setParameters] = useState(null);
-    const [result, setResult] = useState(null);
+
+    // NUEVO ESTADO PARA LISTAS
+    const [results, setResults] = useState([]);
+    const [selectedNeighborhood, setSelectedNeighborhood] = useState(null);
 
     const handleAnalyzeText = async () => {
         if (!chatText.trim()) return;
@@ -27,9 +30,13 @@ export default function App() {
     const handleGetRecommendation = async () => {
         setViewState('loading_result');
         try {
-            const id = await SimulatedAPI.getRecommendationID(parameters);
-            const data = await SimulatedAPI.getNeighborhoodData(id);
-            setResult(data);
+            // Llamamos a la nueva función que devuelve ARRAY
+            const data = await SimulatedAPI.getRecommendations(parameters);
+            setResults(data);
+
+            // Seleccionamos automáticamente el Top 1
+            if (data.length > 0) setSelectedNeighborhood(data[0]);
+
             setViewState('result');
         } catch (error) {
             console.error(error);
@@ -40,23 +47,27 @@ export default function App() {
     const resetSearch = () => {
         setChatText('');
         setParameters(null);
-        setResult(null);
+        setResults([]);
+        setSelectedNeighborhood(null);
         setViewState('input');
     };
 
     return (
         <div className="relative w-full h-screen bg-slate-950 overflow-hidden font-sans text-slate-200">
 
-            {/* MAPA */}
+            {/* MAPA 3D */}
             <div className="absolute inset-0 z-0">
-                <MapSVG activeNeighborhood={result} />
+                <Map3D
+                    neighborhoods={results}
+                    focusedNeighborhood={selectedNeighborhood}
+                />
             </div>
 
             {/* SIDEBAR */}
             <div className={`absolute top-4 left-4 bottom-4 w-96 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl flex flex-col transition-transform duration-500 z-10 ${isOpen ? 'translate-x-0' : '-translate-x-[110%]'}`}>
 
                 {/* Header */}
-                <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
+                <div className="p-6 border-b border-slate-700/50 flex justify-between items-center shrink-0">
                     <div>
                         <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                             <MapPin className="text-violet-500" />
@@ -69,7 +80,7 @@ export default function App() {
                     )}
                 </div>
 
-                {/* Contenido Dinámico */}
+                {/* Contenido con Scroll */}
                 <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
 
                     {/* VISTA 1: INPUT */}
@@ -90,15 +101,15 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* VISTA 2: LOADING PARAMS */}
-                    {viewState === 'loading_params' && (
+                    {/* VISTA 2 y 4: LOADERS (Sin cambios) */}
+                    {(viewState === 'loading_params' || viewState === 'loading_result') && (
                         <div className="h-full flex flex-col items-center justify-center space-y-4">
                             <Loader2 className="animate-spin text-violet-500" size={40} />
-                            <p className="text-sm text-slate-400">Analizando...</p>
+                            <p className="text-sm text-slate-400">Procesando datos...</p>
                         </div>
                     )}
 
-                    {/* VISTA 3: TUNING */}
+                    {/* VISTA 3: TUNING (Igual que antes) */}
                     {viewState === 'tuning' && parameters && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
@@ -112,34 +123,58 @@ export default function App() {
                                 <SliderControl label="Movilidad" icon={Car} value={parameters.mobility} onChange={(v) => setParameters({...parameters, mobility: v})} />
                             </div>
                             <button onClick={handleGetRecommendation} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold mt-4 flex justify-center gap-2">
-                                <Send size={18} /> Encontrar mi Barrio
+                                <Send size={18} /> Buscar Top Barrios
                             </button>
                         </div>
                     )}
 
-                    {/* VISTA 4: LOADING RESULT */}
-                    {viewState === 'loading_result' && (
-                        <div className="h-full flex flex-col items-center justify-center space-y-4">
-                            <Loader2 className="animate-spin text-emerald-500" size={40} />
-                            <p className="text-sm text-slate-400">Consultando el mapa...</p>
-                        </div>
-                    )}
-
-                    {/* VISTA 5: RESULTADO */}
-                    {viewState === 'result' && result && (
-                        <div className="space-y-6 animate-in zoom-in-95 duration-500">
-                            <div className="bg-gradient-to-br from-violet-600 to-indigo-700 p-1 rounded-2xl shadow-xl">
-                                <div className="bg-slate-900 rounded-xl p-5">
-                                    <span className="inline-block px-2 py-1 bg-violet-500/20 text-violet-300 text-[10px] font-bold uppercase rounded mb-3">Recomendación Top</span>
-                                    <h2 className="text-2xl font-bold text-white mb-2">{result.name}</h2>
-                                    <p className="text-sm text-slate-300 mb-4">{result.description}</p>
-                                    <div className="border-t border-slate-700 pt-4">
-                                        <p className="text-xs text-slate-500 uppercase font-bold">Match</p>
-                                        <p className="text-violet-200 text-sm font-medium">{result.match}</p>
-                                    </div>
-                                </div>
+                    {/* VISTA 5: LISTA DE RESULTADOS */}
+                    {viewState === 'result' && results.length > 0 && (
+                        <div className="space-y-4 animate-in zoom-in-95 duration-500">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Trophy className="text-yellow-400" size={20} />
+                                <h2 className="text-lg font-bold text-white">Tu Top Recomendado</h2>
                             </div>
-                            <button onClick={() => setViewState('tuning')} className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm">Ajustar filtros de nuevo</button>
+
+                            {/* Renderizamos la lista de tarjetas */}
+                            {results.map((item, index) => {
+                                const isSelected = selectedNeighborhood?.id === item.id;
+                                return (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => setSelectedNeighborhood(item)}
+                                        className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                                            isSelected
+                                                ? 'bg-violet-900/30 border-violet-500 shadow-lg shadow-violet-900/20 scale-[1.02]'
+                                                : 'bg-slate-800 border-slate-700 hover:bg-slate-750 hover:border-slate-600'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-500 text-black' : 'bg-slate-600 text-white'}`}>
+                                                    {index + 1}
+                                                </span>
+                                                <h3 className="font-bold text-white">{item.name}</h3>
+                                            </div>
+                                            <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-full">
+                                                {item.score}% Match
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-400 line-clamp-2 mb-2">
+                                            {item.description}
+                                        </p>
+                                        {isSelected && (
+                                            <div className="text-[10px] text-violet-300 font-medium animate-in fade-in">
+                                                Clic para ver detalles en mapa
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            <button onClick={() => setViewState('tuning')} className="w-full py-3 mt-4 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm">
+                                Ajustar filtros de nuevo
+                            </button>
                         </div>
                     )}
 
