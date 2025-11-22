@@ -1,14 +1,11 @@
-// Datos Mock con stats para calcular el match
+// Datos Mock Ligeros (Sin coordenadas pesadas al principio)
 export const MOCK_NEIGHBORHOODS = {
     'dtla': {
         id: 'dtla',
-        name: 'Downtown LA',
+        name: 'Downtown Los Angeles', // Nombre real para buscar en OSM
         description: 'El corazón urbano. Rascacielos, cultura y movimiento constante.',
-        // Definimos sus atributos para calcular el match real
         stats: { luxury: 60, safety: 40, nature: 10, nightlife: 90, mobility: 100 },
-        coordinates: [
-            [34.064, -118.255], [34.038, -118.270], [34.030, -118.250], [34.050, -118.230]
-        ],
+        // Coordenada central aproximada para volar allí antes de cargar el polígono
         center: [34.045, -118.250]
     },
     'beverly_hills': {
@@ -16,9 +13,6 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Beverly Hills',
         description: 'Lujo exclusivo, privacidad y poder.',
         stats: { luxury: 100, safety: 90, nature: 50, nightlife: 40, mobility: 60 },
-        coordinates: [
-            [34.095, -118.430], [34.090, -118.390], [34.065, -118.390], [34.065, -118.420]
-        ],
         center: [34.075, -118.400]
     },
     'santa_monica': {
@@ -26,9 +20,6 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Santa Monica',
         description: 'Brisa marina, tecnología y libertad.',
         stats: { luxury: 70, safety: 70, nature: 100, nightlife: 60, mobility: 50 },
-        coordinates: [
-            [34.030, -118.510], [34.035, -118.470], [34.005, -118.470], [34.000, -118.490]
-        ],
         center: [34.015, -118.490]
     },
     'silver_lake': {
@@ -36,9 +27,6 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Silver Lake',
         description: 'Bohemio, auténtico y comunitario.',
         stats: { luxury: 40, safety: 60, nature: 60, nightlife: 70, mobility: 40 },
-        coordinates: [
-            [34.100, -118.285], [34.095, -118.260], [34.080, -118.270], [34.085, -118.290]
-        ],
         center: [34.090, -118.275]
     }
 };
@@ -54,34 +42,48 @@ export const SimulatedAPI = {
                 if (t.includes('mar') || t.includes('aire') || t.includes('daenerys')) { params.nature = 90; params.luxury = 70; }
                 if (t.includes('tranquilo') || t.includes('barato') || t.includes('jon')) { params.luxury = 30; params.nature = 80; }
                 resolve(params);
+            }, 800);
+        });
+    },
+
+    getRecommendations: async (userParams) => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const scored = Object.values(MOCK_NEIGHBORHOODS).map(nb => {
+                    let diff = 0;
+                    Object.keys(userParams).forEach(key => {
+                        diff += Math.abs(userParams[key] - (nb.stats[key] || 50));
+                    });
+                    const matchScore = Math.max(0, 100 - (diff / 5));
+                    return { ...nb, score: Math.round(matchScore) };
+                });
+                scored.sort((a, b) => b.score - a.score);
+                resolve(scored);
             }, 1000);
         });
     },
 
-    // AHORA DEVUELVE UN ARRAY ORDENADO POR COINCIDENCIA
-    getRecommendations: async (userParams) => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                // 1. Calcular "distancia" entre lo que quiere el usuario y cada barrio
-                const scored = Object.values(MOCK_NEIGHBORHOODS).map(nb => {
-                    let diff = 0;
-                    // Comparamos cada estadística
-                    Object.keys(userParams).forEach(key => {
-                        diff += Math.abs(userParams[key] - (nb.stats[key] || 50));
-                    });
-                    // Cuanto menor la diferencia, mayor el score (Match %)
-                    // 500 es la diferencia máxima posible aprox (5 params * 100)
-                    const matchScore = Math.max(0, 100 - (diff / 5));
+    // --- NUEVA FUNCIÓN: API REAL DE OPENSTREETMAP ---
+    fetchNeighborhoodPolygon: async (neighborhoodName) => {
+        try {
+            // Buscamos en Los Angeles, California explícitamente
+            const query = `${neighborhoodName}, Los Angeles, California`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&polygon_geojson=1&limit=1`;
 
-                    return { ...nb, score: Math.round(matchScore) };
-                });
+            const response = await fetch(url);
+            const data = await response.json();
 
-                // 2. Ordenar por mejor puntuación
-                scored.sort((a, b) => b.score - a.score);
-
-                // 3. Devolver el Top 3 (o todos)
-                resolve(scored); // Devolvemos el array completo de objetos ya enriquecidos
-            }, 1200);
-        });
+            if (data && data.length > 0) {
+                // Devolvemos el GeoJSON del polígono y el Bounding Box
+                return {
+                    geojson: data[0].geojson,
+                    display_name: data[0].display_name
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error("Error fetching polygon:", error);
+            return null;
+        }
     }
 };
