@@ -4,12 +4,11 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = 'pk.eyJ1Ijoiam9zZXBsbG10MjAiLCJhIjoiY21pYWY5aDg5MHhmZTJpczk5ODcxYmlmayJ9.guB9Abh7CFwHL_3FYRlEKQ';
 
-const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
+const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode }) => {
     const mapRef = useRef(null);
 
     // Generamos la fuente GeoJSON solo para los barrios que YA tengan polígono cargado
     const geoJSONData = useMemo(() => {
-        // Filtramos solo los que tienen datos de geometría cargados
         const readyNeighborhoods = neighborhoods.filter(nb => nb.polygonGeoJSON);
 
         if (readyNeighborhoods.length === 0) return null;
@@ -19,12 +18,12 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
             features: readyNeighborhoods.map(nb => ({
                 type: 'Feature',
                 properties: { id: nb.id, name: nb.name, score: nb.score },
-                geometry: nb.polygonGeoJSON // Usamos directamente el GeoJSON que viene de la API
+                geometry: nb.polygonGeoJSON
             }))
         };
     }, [neighborhoods]);
 
-    // Efecto de vuelo (usa el centro simple mientras carga el polígono)
+    // Efecto de vuelo
     useEffect(() => {
         if (focusedNeighborhood && mapRef.current) {
             const [lat, lng] = focusedNeighborhood.center;
@@ -40,6 +39,14 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
         }
     }, [focusedNeighborhood]);
 
+    // --- COLORES DINÁMICOS SEGÚN EL MODO ---
+    const polygonColors = {
+        fillActive: isGoTMode ? '#7f1d1d' : '#8b5cf6',   // Rojo Sangre vs Violeta Tech
+        fillInactive: isGoTMode ? '#2c1810' : '#475569', // Marrón oscuro vs Gris
+        line: isGoTMode ? '#d4af37' : '#a78bfa',         // Dorado vs Violeta claro
+        opacity: isGoTMode ? 0.5 : 0.6
+    };
+
     return (
         <Map
             ref={mapRef}
@@ -51,7 +58,7 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
                 bearing: 0
             }}
             style={{ width: '100%', height: '100%' }}
-            mapStyle="mapbox://styles/mapbox/dark-v11"
+            mapStyle={mapStyle || "mapbox://styles/mapbox/dark-v11"}
             mapboxAccessToken={MAPBOX_TOKEN}
             terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
         >
@@ -63,7 +70,7 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
                 type="fill-extrusion"
                 minzoom={13}
                 paint={{
-                    'fill-extrusion-color': '#aaa',
+                    'fill-extrusion-color': isGoTMode ? '#3e3327' : '#aaa', // Edificios marrones en GoT
                     'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
                     'fill-extrusion-opacity': 0.6
                 }}
@@ -78,18 +85,19 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
                             'fill-color': [
                                 'case',
                                 ['==', ['get', 'id'], focusedNeighborhood?.id || ''],
-                                '#8b5cf6',
-                                '#475569'
+                                polygonColors.fillActive,
+                                polygonColors.fillInactive
                             ],
-                            'fill-opacity': 0.5
+                            'fill-opacity': polygonColors.opacity
                         }}
                     />
                     <Layer
                         id="neighborhood-line"
                         type="line"
                         paint={{
-                            'line-color': '#a78bfa',
-                            'line-width': 3
+                            'line-color': polygonColors.line,
+                            'line-width': 3,
+                            'line-blur': isGoTMode ? 1 : 0 // Un poco de difuminado "mágico" en GoT
                         }}
                     />
                 </Source>
@@ -104,14 +112,18 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood }) => {
                     offset={40}
                     className="custom-popup-3d"
                 >
-                    <div className="p-2 text-slate-900 min-w-[150px]">
+                    <div className={`p-2 min-w-[150px] ${isGoTMode ? 'text-[#3e3327]' : 'text-slate-900'}`}>
                         <h3 className="font-bold text-lg">{focusedNeighborhood.name}</h3>
                         <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-slate-500 font-bold">MATCH</span>
-                            <span className="text-sm text-violet-700 font-extrabold">{focusedNeighborhood.score}%</span>
+                            <span className="text-xs font-bold opacity-70">MATCH</span>
+                            <span className={`text-sm font-extrabold ${isGoTMode ? 'text-[#7f1d1d]' : 'text-violet-700'}`}>
+                    {focusedNeighborhood.score}%
+                </span>
                         </div>
                         {!focusedNeighborhood.polygonGeoJSON && (
-                            <div className="text-[10px] text-orange-600 mt-1 animate-pulse">Cargando perímetro...</div>
+                            <div className="text-[10px] mt-1 animate-pulse text-orange-600">
+                                {isGoTMode ? "Buscando en los mapas..." : "Cargando perímetro..."}
+                            </div>
                         )}
                     </div>
                 </Popup>
