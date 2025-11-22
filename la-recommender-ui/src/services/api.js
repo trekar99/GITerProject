@@ -1,51 +1,74 @@
-// Datos Mock Ligeros (Sin coordenadas pesadas al principio)
+// 1. Importamos el archivo GeoJSON (convertido a .json)
+import laNeighborhoodsData from '../data/Neighborhood_Councils_(Certified).json';
+
+// 2. Datos Mock mapeados a barrios REALES del archivo GeoJSON
 export const MOCK_NEIGHBORHOODS = {
-    'dtla': {
-        id: 'dtla',
-        name: 'Downtown Los Angeles', // Nombre real para buscar en OSM
-        description: 'El corazón urbano. Rascacielos, cultura y movimiento constante.',
-        stats: { luxury: 60, safety: 40, nature: 10, nightlife: 90, mobility: 100 },
-        // Coordenada central aproximada para volar allí antes de cargar el polígono
-        center: [34.045, -118.250]
+    'echo_park': { // <--- NUEVO (Reemplaza a Downtown)
+        id: 'echo_park',
+        name: 'Echo Park',
+        // Nombre exacto en el GeoJSON:
+        geojsonName: 'ECHO PARK NC',
+        description: 'Vida urbana relajada, el famoso lago con patos, cafés de especialidad y vistas al skyline.',
+        // Stats: Mucha naturaleza (por el parque), buen ambiente nocturno, no muy lujoso
+        stats: { luxury: 40, safety: 60, nature: 80, nightlife: 70, mobility: 60 },
+        center: [34.078, -118.260] // Coordenadas de Echo Park
     },
-    'beverly_hills': {
-        id: 'beverly_hills',
-        name: 'Beverly Hills',
-        description: 'Lujo exclusivo, privacidad y poder.',
-        stats: { luxury: 100, safety: 90, nature: 50, nightlife: 40, mobility: 60 },
-        center: [34.075, -118.400]
+    'bel_air': {
+        id: 'bel_air',
+        name: 'Bel Air - Beverly Crest',
+        geojsonName: 'BEL AIR-BEVERLY CREST NC',
+        description: 'Privacidad absoluta, mansiones en las colinas y vistas exclusivas.',
+        stats: { luxury: 100, safety: 90, nature: 60, nightlife: 20, mobility: 40 },
+        center: [34.105, -118.445]
     },
-    'santa_monica': {
-        id: 'santa_monica',
-        name: 'Santa Monica',
-        description: 'Brisa marina, tecnología y libertad.',
-        stats: { luxury: 70, safety: 70, nature: 100, nightlife: 60, mobility: 50 },
-        center: [34.015, -118.490]
+    'venice': {
+        id: 'venice',
+        name: 'Venice Beach',
+        geojsonName: 'VENICE NC',
+        description: 'Espíritu libre, canales, playa y una comunidad artística vibrante.',
+        stats: { luxury: 70, safety: 60, nature: 90, nightlife: 80, mobility: 70 },
+        center: [33.990, -118.465]
     },
     'silver_lake': {
         id: 'silver_lake',
         name: 'Silver Lake',
-        description: 'Bohemio, auténtico y comunitario.',
-        stats: { luxury: 40, safety: 60, nature: 60, nightlife: 70, mobility: 40 },
+        geojsonName: 'SILVER LAKE NC',
+        description: 'Bohemio, auténtico y comunitario. El barrio hipster original.',
+        stats: { luxury: 50, safety: 60, nature: 50, nightlife: 70, mobility: 50 },
         center: [34.090, -118.275]
     }
 };
 
 export const SimulatedAPI = {
+    // 1. Simulación de NLP (Texto -> Parámetros)
     parseTextToParams: async (text) => {
         return new Promise((resolve) => {
             setTimeout(() => {
                 const params = { luxury: 50, safety: 50, nature: 50, nightlife: 50, mobility: 50 };
                 const t = text.toLowerCase();
-                if (t.includes('lujo') || t.includes('dinero') || t.includes('cersei')) { params.luxury = 90; params.safety = 90; }
-                if (t.includes('fiesta') || t.includes('noche') || t.includes('tyrion')) { params.nightlife = 90; params.mobility = 80; }
-                if (t.includes('mar') || t.includes('aire') || t.includes('daenerys')) { params.nature = 90; params.luxury = 70; }
-                if (t.includes('tranquilo') || t.includes('barato') || t.includes('jon')) { params.luxury = 30; params.nature = 80; }
+
+                // Palabras clave actualizadas
+                if (t.includes('lujo') || t.includes('dinero') || t.includes('cersei') || t.includes('mansión')) {
+                    params.luxury = 90; params.safety = 90;
+                }
+                // Ajustamos para pillar Echo Park/Silver Lake
+                if (t.includes('fiesta') || t.includes('noche') || t.includes('tyrion') || t.includes('bar')) {
+                    params.nightlife = 90; params.mobility = 70;
+                }
+                // Naturaleza ahora incluye "lago" y "parque" para Echo Park
+                if (t.includes('mar') || t.includes('playa') || t.includes('daenerys') || t.includes('lago') || t.includes('parque')) {
+                    params.nature = 90; params.luxury = 60;
+                }
+                if (t.includes('tranquilo') || t.includes('hipster') || t.includes('jon') || t.includes('local') || t.includes('café')) {
+                    params.luxury = 30; params.nature = 70; params.nightlife = 60;
+                }
+
                 resolve(params);
             }, 800);
         });
     },
 
+    // 2. Recomendador (Algoritmo de coincidencia)
     getRecommendations: async (userParams) => {
         return new Promise((resolve) => {
             setTimeout(() => {
@@ -54,35 +77,41 @@ export const SimulatedAPI = {
                     Object.keys(userParams).forEach(key => {
                         diff += Math.abs(userParams[key] - (nb.stats[key] || 50));
                     });
+                    // Algoritmo simple de similitud (0 a 100%)
                     const matchScore = Math.max(0, 100 - (diff / 5));
                     return { ...nb, score: Math.round(matchScore) };
                 });
+
+                // Ordenar de mayor match a menor
                 scored.sort((a, b) => b.score - a.score);
+
                 resolve(scored);
             }, 1000);
         });
     },
 
-    // --- NUEVA FUNCIÓN: API REAL DE OPENSTREETMAP ---
-    fetchNeighborhoodPolygon: async (neighborhoodName) => {
+    // 3. BÚSQUEDA LOCAL EN TU ARCHIVO (Síncrono e Instantáneo)
+    getNeighborhoodPolygonLocal: (targetName) => {
         try {
-            // Buscamos en Los Angeles, California explícitamente
-            const query = `${neighborhoodName}, Los Angeles, California`;
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&polygon_geojson=1&limit=1`;
+            console.log(`🔍 Buscando polígono local para: "${targetName}"...`);
 
-            const response = await fetch(url);
-            const data = await response.json();
+            // Buscamos dentro de las "features" del GeoJSON importado
+            const feature = laNeighborhoodsData.features.find(
+                f => f.properties.NAME === targetName // Coincidencia exacta
+            );
 
-            if (data && data.length > 0) {
-                // Devolvemos el GeoJSON del polígono y el Bounding Box
+            if (feature) {
+                console.log(`✅ ¡Encontrado!`);
                 return {
-                    geojson: data[0].geojson,
-                    display_name: data[0].display_name
+                    geojson: feature.geometry, // Devolvemos la geometría tal cual
+                    display_name: feature.properties.NAME
                 };
+            } else {
+                console.warn(`⚠️ NO se encontró "${targetName}" en el archivo local.`);
+                return null;
             }
-            return null;
         } catch (error) {
-            console.error("Error fetching polygon:", error);
+            console.error("Error crítico buscando en GeoJSON local:", error);
             return null;
         }
     }
