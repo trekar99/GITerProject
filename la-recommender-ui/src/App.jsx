@@ -255,36 +255,36 @@ export default function App() {
                                 <SliderControl
                                     label={isGoTMode ? "Defensas y Muros" : "Seguridad"}
                                     icon={Shield}
-                                    value={parameters.safety}
-                                    onChange={(v) => setParameters({...parameters, safety: v})}
+                                    value={parameters.security_tranquility}
+                                    onChange={(v) => setParameters({...parameters, security_tranquility: v})}
                                     isGoT={isGoTMode}
                                 />
                                 <SliderControl
                                     label={isGoTMode ? "Oro y Riquezas" : "Lujo"}
                                     icon={DollarSign}
-                                    value={parameters.luxury}
-                                    onChange={(v) => setParameters({...parameters, luxury: v})}
+                                    value={parameters.luxury_exclusivity}
+                                    onChange={(v) => setParameters({...parameters, luxury_exclusivity: v})}
                                     isGoT={isGoTMode}
                                 />
                                 <SliderControl
                                     label={isGoTMode ? "Bosques de Dioses" : "Naturaleza"}
                                     icon={Trees}
-                                    value={parameters.nature}
-                                    onChange={(v) => setParameters({...parameters, nature: v})}
+                                    value={parameters.nature_outdoors}
+                                    onChange={(v) => setParameters({...parameters, nature_outdoors: v})}
                                     isGoT={isGoTMode}
                                 />
                                 <SliderControl
                                     label={isGoTMode ? "Festines y Vino" : "Vida Nocturna"}
                                     icon={Music}
-                                    value={parameters.nightlife}
-                                    onChange={(v) => setParameters({...parameters, nightlife: v})}
+                                    value={parameters.nightlife_social}
+                                    onChange={(v) => setParameters({...parameters, nightlife_social: v})}
                                     isGoT={isGoTMode}
                                 />
                                 <SliderControl
                                     label={isGoTMode ? "Caminos Reales" : "Movilidad"}
                                     icon={Car}
-                                    value={parameters.mobility}
-                                    onChange={(v) => setParameters({...parameters, mobility: v})}
+                                    value={parameters.connectivity_services}
+                                    onChange={(v) => setParameters({...parameters, connectivity_services: v})}
                                     isGoT={isGoTMode}
                                 />
                             </div>

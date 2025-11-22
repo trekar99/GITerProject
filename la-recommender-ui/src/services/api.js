@@ -11,7 +11,7 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Echo Park',
         geojsonName: 'ECHO PARK NC',
         description: 'Vida urbana relajada, lago con patos y cafés hipster.',
-        stats: { luxury: 40, safety: 60, nature: 80, nightlife: 70, mobility: 60 },
+        stats: { luxury_exclusivity: 40, security_tranquility: 60, nature_outdoors: 80, nightlife_social: 70, connectivity_services: 60 },
         center: [34.078, -118.260]
     },
     'bel_air': {
@@ -19,7 +19,7 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Bel Air - Beverly Crest',
         geojsonName: 'BEL AIR-BEVERLY CREST NC',
         description: 'Privacidad absoluta, mansiones en las colinas y vistas exclusivas.',
-        stats: { luxury: 100, safety: 90, nature: 60, nightlife: 20, mobility: 40 },
+        stats: { luxury_exclusivity: 100, security_tranquility: 90, nature_outdoors: 60, nightlife_social: 20, connectivity_services: 40 },
         center: [34.105, -118.445]
     },
     'venice': {
@@ -27,7 +27,7 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Venice Beach',
         geojsonName: 'VENICE NC',
         description: 'Espíritu libre, canales, playa y arte callejero.',
-        stats: { luxury: 70, safety: 60, nature: 90, nightlife: 80, mobility: 70 },
+        stats: { luxury_exclusivity: 70, security_tranquility: 60, nature_outdoors: 90, nightlife_social: 80, connectivity_services: 70 },
         center: [33.990, -118.465]
     },
     'silver_lake': {
@@ -35,7 +35,7 @@ export const MOCK_NEIGHBORHOODS = {
         name: 'Silver Lake',
         geojsonName: 'SILVER LAKE NC',
         description: 'Bohemio, auténtico y comunitario.',
-        stats: { luxury: 50, safety: 60, nature: 50, nightlife: 70, mobility: 50 },
+        stats: { luxury_exclusivity: 50, security_tranquility: 60, nature_outdoors: 50, nightlife_social: 70, connectivity_services: 50 },
         center: [34.090, -118.275]
     }
 };
@@ -59,7 +59,7 @@ export const SimulatedAPI = {
             const data = await response.json();
 
             // Obtenemos los datos crudos (0-10)
-            // Tu backend devuelve algo como: { luxury: 8, safety: 5 ... }
+            // Tu backend devuelve algo como: { luxury_exclusivity: 8, security_tranquility: 5 ... }
             const rawParams = data.parameters || data;
 
             console.log("Valores originales del Backend (0-10):", rawParams);
@@ -67,7 +67,7 @@ export const SimulatedAPI = {
             // --- TRANSFORMACIÓN DE DATOS (0-10 -> 0-100) ---
             const normalizedParams = {};
 
-            // Iteramos por cada clave (luxury, safety...) y multiplicamos por 10
+            // Iteramos por cada clave (luxury_exclusivity, security_tranquility...) y multiplicamos por 10
             Object.keys(rawParams).forEach(key => {
                 const value = rawParams[key];
                 if (typeof value === 'number') {
@@ -84,7 +84,7 @@ export const SimulatedAPI = {
         } catch (error) {
             console.error("Error API Parametrize:", error);
             // Fallback en escala 0-100
-            return { luxury: 50, safety: 50, nature: 50, nightlife: 50, mobility: 50 };
+            return { luxury_exclusivity: 50, security_tranquility: 50, nature_outdoors: 50, nightlife_social: 50, connectivity_services: 50 };
         }
     },
 
