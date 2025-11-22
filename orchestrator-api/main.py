@@ -1,25 +1,36 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
-from core.config import get_settings
-from middlewares.security import restrict_methods_middleware
+from fastapi.middleware.cors import CORSMiddleware  # <--- IMPORTANTE
 from routes import llm
+import uvicorn
 
-settings = get_settings()
+app = FastAPI(
+    title="LA Neighborhood Orchestrator",
+    description="API para recomendar barrios de Los Angeles",
+    version="1.0.0"
+)
 
-app = FastAPI(title=settings.APP_NAME)
-app.middleware("http")(restrict_methods_middleware)
+# --- CONFIGURACIÓN CORS (CRUCIAL PARA QUE EL FRONTEND SE CONECTE) ---
+origins = [
+    "http://localhost:5173", # Puerto por defecto de Vite
+    "http://localhost:3000", # Por si acaso
+    "http://127.0.0.1:5173"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,   # Lista de dominios externos permitidos
+    allow_origins=origins, # Permitir estos orígenes
     allow_credentials=True,
-    allow_methods=["GET"],                 # SOLO GET desde navegador
-    allow_headers=["*"],
+    allow_methods=["*"],   # Permitir todos los métodos (GET, POST, OPTIONS...)
+    allow_headers=["*"],   # Permitir todos los headers
 )
+# ------------------------------------------------------------------
 
-app.include_router(llm.router, prefix="/llm")
+# Registrar rutas
+app.include_router(llm.router, prefix="/api/llm", tags=["LLM"])
 
-@app.get("/")
-def health_check():
-    return {"status": "ok", "message": "API encendida correctamente"}
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "Orchestrator API is running 🚀"}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
