@@ -12,7 +12,6 @@ export default function App() {
 
     const [results, setResults] = useState([]);
     const [selectedNeighborhood, setSelectedNeighborhood] = useState(null);
-    const [loadingPolygon, setLoadingPolygon] = useState(false); // Nuevo estado de carga
 
     const handleAnalyzeText = async () => {
         if (!chatText.trim()) return;
@@ -32,51 +31,38 @@ export default function App() {
         try {
             const data = await SimulatedAPI.getRecommendations(parameters);
             setResults(data);
-
-            // Auto-seleccionar el Top 1 (Opcional: Si quieres que cargue solo al clicar, quita esto)
-            if (data.length > 0) {
-                handleSelectNeighborhood(data[0]);
-            } else {
-                setViewState('result');
-            }
+            setViewState('result');
         } catch (error) {
             console.error(error);
             setViewState('tuning');
         }
     };
 
-    // --- NUEVO HANDLER INTELIGENTE ---
-    const handleSelectNeighborhood = async (neighborhood) => {
-        // 1. Marcarlo como seleccionado visualmente (aunque no tenga polígono aún)
-        setSelectedNeighborhood(neighborhood);
-        setViewState('result');
+    // --- HANDLER SIMPLIFICADO (INSTANTÁNEO) ---
+    const handleSelectNeighborhood = (neighborhood) => {
+        // 1. Establecemos la selección visual
+        let targetNeighborhood = neighborhood;
 
-        // 2. Si ya tiene polígono (cacheado), no hacemos nada más
-        if (neighborhood.polygonGeoJSON) {
-            return;
+        // 2. Si aún no tiene el polígono cargado, lo buscamos en el JSON local
+        if (!targetNeighborhood.polygonGeoJSON) {
+            const polygonData = SimulatedAPI.getNeighborhoodPolygonLocal(neighborhood.geojsonName);
+
+            if (polygonData) {
+                // Creamos una copia enriquecida del barrio con su polígono
+                targetNeighborhood = {
+                    ...neighborhood,
+                    polygonGeoJSON: polygonData.geojson
+                };
+
+                // Actualizamos la lista global para no tener que buscarlo de nuevo
+                setResults(prev => prev.map(item =>
+                    item.id === neighborhood.id ? targetNeighborhood : item
+                ));
+            }
         }
 
-        // 3. Si no tiene, lo pedimos a la API
-        setLoadingPolygon(true);
-        const polygonData = await SimulatedAPI.fetchNeighborhoodPolygon(neighborhood.name);
-
-        if (polygonData) {
-            // 4. Actualizamos la lista de resultados con el nuevo dato para no pedirlo 2 veces
-            setResults(prevResults => prevResults.map(item => {
-                if (item.id === neighborhood.id) {
-                    // Inyectamos el polígono en el objeto del barrio
-                    const updated = {
-                        ...item,
-                        polygonGeoJSON: polygonData.geojson
-                    };
-                    // Actualizamos también el seleccionado actual para que el mapa reaccione
-                    setSelectedNeighborhood(updated);
-                    return updated;
-                }
-                return item;
-            }));
-        }
-        setLoadingPolygon(false);
+        // 3. Seleccionamos el barrio (ya con o sin polígono)
+        setSelectedNeighborhood(targetNeighborhood);
     };
 
     const resetSearch = () => {
@@ -96,14 +82,6 @@ export default function App() {
                     neighborhoods={results}
                     focusedNeighborhood={selectedNeighborhood}
                 />
-
-                {/* Indicador de carga de mapa flotante */}
-                {loadingPolygon && (
-                    <div className="absolute top-4 right-4 bg-black/70 text-white px-4 py-2 rounded-full flex items-center gap-2 text-xs backdrop-blur-md z-50 animate-in fade-in">
-                        <Loader2 className="animate-spin" size={14} />
-                        Descargando perímetro...
-                    </div>
-                )}
             </div>
 
             {/* SIDEBAR */}
@@ -123,7 +101,9 @@ export default function App() {
                     )}
                 </div>
 
+                {/* Contenido */}
                 <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+
                     {/* VISTA 1: INPUT */}
                     {viewState === 'input' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
@@ -142,6 +122,7 @@ export default function App() {
                         </div>
                     )}
 
+                    {/* VISTA 2 & 4: LOADERS */}
                     {(viewState === 'loading_params' || viewState === 'loading_result') && (
                         <div className="h-full flex flex-col items-center justify-center space-y-4">
                             <Loader2 className="animate-spin text-violet-500" size={40} />
@@ -149,6 +130,7 @@ export default function App() {
                         </div>
                     )}
 
+                    {/* VISTA 3: TUNING */}
                     {viewState === 'tuning' && parameters && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                             <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
@@ -180,7 +162,7 @@ export default function App() {
                                 return (
                                     <div
                                         key={item.id}
-                                        onClick={() => handleSelectNeighborhood(item)} // USAMOS EL NUEVO HANDLER
+                                        onClick={() => handleSelectNeighborhood(item)}
                                         className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
                                             isSelected
                                                 ? 'bg-violet-900/30 border-violet-500 shadow-lg shadow-violet-900/20 scale-[1.02]'
@@ -201,6 +183,11 @@ export default function App() {
                                         <p className="text-xs text-slate-400 line-clamp-2 mb-2">
                                             {item.description}
                                         </p>
+                                        {isSelected && !item.polygonGeoJSON && (
+                                            <div className="text-[10px] text-orange-400 mt-2 font-mono">
+                                                ⚠️ Polígono no encontrado en GeoJSON local
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -210,12 +197,15 @@ export default function App() {
                             </button>
                         </div>
                     )}
+
                 </div>
             </div>
 
+            {/* Botón Toggle Sidebar */}
             <button onClick={() => setIsOpen(!isOpen)} className={`absolute top-4 transition-all duration-500 z-20 bg-slate-800 p-2 rounded-r-lg border-y border-r border-slate-600 text-slate-400 hover:text-white ${isOpen ? 'left-96' : 'left-0'}`}>
                 <ChevronRight size={20} className={`transform transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
             </button>
+
         </div>
     );
 }
