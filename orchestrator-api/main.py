@@ -27,12 +27,12 @@ app.add_middleware(
 
 # Registrar rutas
 app.include_router(llm.router, prefix="/api/llm", tags=["LLM"])
-app.include_router(classify.router, prefix="/api/", tags=["LLM"])
-app.include_router(recommend.router, prefix="/api/", tags=["LLM"])
+app.include_router(classify.router, prefix="/api", tags=["LLM"])
+app.include_router(recommend.router, prefix="/api", tags=["LLM"])
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "message": "Orchestrator API is running 🚀"}
+    return {"status": "ok", "message": "Orchestrator API is running..."}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
