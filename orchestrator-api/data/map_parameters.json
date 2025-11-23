@@ -1,0 +1,9 @@
+{
+  "MAP_PARAMETERS": {
+    "nightlife_social": "vida nocturna y social",
+    "security_tranquility": "seguridad y tranquilidad",
+    "nature_outdoors": "naturaleza y aire libre",
+    "luxury_exclusivity": "lujo y exclusividad",
+    "connectivity_services": "conectividad y servicios"
+  }
+}

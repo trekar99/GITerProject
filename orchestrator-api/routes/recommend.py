@@ -4,7 +4,7 @@ from services.recommendation_service import RecommendationService
 
 router = APIRouter()
 
-recommender = RecommendationService(csv_path="../../model_data.csv")
+recommender = RecommendationService()
 
 @router.post("/recommend")
 async def recommend_from_metrics(metrics: Metrics):
