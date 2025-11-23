@@ -1,20 +1,17 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import Map, { Source, Layer, Popup } from 'react-map-gl';
+import * as turf from '@turf/turf';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const MAPBOX_TOKEN = 'pk.eyJ1Ijoiam9zZXBsbG10MjAiLCJhIjoiY21pYWY5aDg5MHhmZTJpczk5ODcxYmlmayJ9.guB9Abh7CFwHL_3FYRlEKQ';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode, onSelectNeighborhood }) => {
     const mapRef = useRef(null);
+    const [popupCoordinates, setPopupCoordinates] = useState(null);
 
-    // Generamos el GeoJSON de forma SEGURA
+    // Generamos la fuente GeoJSON solo para los barrios que YA tengan polígono cargado
     const geoJSONData = useMemo(() => {
-        // Filtramos barrios que tengan polígono Y que el polígono tenga coordenadas válidas
-        const readyNeighborhoods = neighborhoods.filter(nb =>
-            nb.polygonGeoJSON &&
-            nb.polygonGeoJSON.coordinates &&
-            nb.polygonGeoJSON.coordinates.length > 0
-        );
+        const readyNeighborhoods = neighborhoods.filter(nb => nb.polygonGeoJSON);
 
         if (readyNeighborhoods.length === 0) return null;
 
@@ -28,46 +25,67 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode, o
         };
     }, [neighborhoods]);
 
-    // Efecto de vuelo (flyTo) - También protegido
+    // Efecto de vuelo y cálculo de centroide para el Popup
     useEffect(() => {
-        if (focusedNeighborhood && mapRef.current && focusedNeighborhood.center) {
-            const [lat, lng] = focusedNeighborhood.center;
+        if (focusedNeighborhood && mapRef.current) {
 
-            // Pequeña validación de coordenadas
-            if (isNaN(lat) || isNaN(lng)) return;
+            let centerLngLat = null;
 
-            mapRef.current.flyTo({
-                center: [lng, lat],
-                zoom: 14,
-                pitch: 60,
-                bearing: -15,
-                duration: 2500,
-                essential: true
-            });
+            // Intentamos calcular el centro visual del polígono usando Turf
+            if (focusedNeighborhood.polygonGeoJSON) {
+                try {
+                    const polygonFeature = {
+                        type: 'Feature',
+                        geometry: focusedNeighborhood.polygonGeoJSON
+                    };
+                    const centerPoint = turf.centerOfMass(polygonFeature);
+                    centerLngLat = centerPoint.geometry.coordinates; // [Lng, Lat]
+                } catch (e) {
+                    console.warn("Error calculando centroide:", e);
+                }
+            }
+
+            if (!centerLngLat && focusedNeighborhood.center) {
+                centerLngLat = [focusedNeighborhood.center[1], focusedNeighborhood.center[0]];
+            }
+
+            if (centerLngLat) {
+                setPopupCoordinates(centerLngLat);
+
+                mapRef.current.flyTo({
+                    center: centerLngLat,
+                    zoom: 13.5,
+                    pitch: 60,
+                    bearing: -15,
+                    duration: 2500,
+                    essential: true
+                });
+            }
         }
     }, [focusedNeighborhood]);
 
-    // --- COLORES DINÁMICOS ---
-    const polygonColors = {
-        fillActive: isGoTMode ? '#7f1d1d' : '#8b5cf6',
-        fillInactive: isGoTMode ? '#2c1810' : '#475569',
-        line: isGoTMode ? '#d4af37' : '#a78bfa',
-        opacity: isGoTMode ? 0.5 : 0.6
-    };
-
-    // Manejador de clics
     const onMapClick = (event) => {
         const features = event.features;
+
         if (features && features.length > 0) {
             const clickedFeature = features.find(f => f.layer.id === 'neighborhood-fill');
+
             if (clickedFeature) {
                 const neighborhoodId = clickedFeature.properties.id;
                 const selected = neighborhoods.find(nb => nb.id === neighborhoodId);
+
                 if (selected && onSelectNeighborhood) {
                     onSelectNeighborhood(selected);
                 }
             }
         }
+    };
+
+    const polygonColors = {
+        fillActive: isGoTMode ? '#7f1d1d' : '#8b5cf6',
+        fillInactive: isGoTMode ? '#2c1810' : '#475569',
+        line: isGoTMode ? '#d4af37' : '#a78bfa',
+        opacity: isGoTMode ? 0.5 : 0.6
     };
 
     return (
@@ -128,10 +146,11 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode, o
                 </Source>
             )}
 
-            {focusedNeighborhood && (
+            {/* Usamos las coordenadas calculadas dinámicamente para centrar el popup */}
+            {focusedNeighborhood && popupCoordinates && (
                 <Popup
-                    longitude={focusedNeighborhood.center[1]}
-                    latitude={focusedNeighborhood.center[0]}
+                    longitude={popupCoordinates[0]}
+                    latitude={popupCoordinates[1]}
                     anchor="bottom"
                     closeButton={false}
                     offset={40}

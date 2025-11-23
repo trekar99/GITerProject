@@ -2,12 +2,9 @@ import React from 'react';
 import { X, Feather, Bot } from 'lucide-react';
 
 const JustificationModal = ({ isOpen, onClose, text, neighborhoodName, isGoTMode, isLoading }) => {
-    // NOTA: Ya no hacemos "return null" si !isOpen, para permitir la animación de salida (slide-out).
-    // Controlamos la visibilidad con clases CSS (translate-x).
 
-    // Estilos dinámicos
     const theme = isGoTMode ? {
-        container: 'bg-[#1c1610]/95 border border-[#d4af37]/30 shadow-[0_0_30px_rgba(0,0,0,0.8)]', // Fondo oscuro GoT
+        container: 'bg-[#1c1610]/95 border border-[#d4af37]/30 shadow-[0_0_30px_rgba(0,0,0,0.8)]',
         header: 'border-b border-[#d4af37]/20',
         title: 'text-[#d4af37] font-got text-lg tracking-widest',
         body: 'text-[#cdcfd1] font-serif text-sm leading-relaxed italic',
@@ -16,7 +13,7 @@ const JustificationModal = ({ isOpen, onClose, text, neighborhoodName, isGoTMode
         loaderColor: 'text-[#d4af37]',
         scroll: 'scrollbar-thin scrollbar-thumb-[#d4af37]/20 scrollbar-track-transparent'
     } : {
-        container: 'bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 shadow-2xl', // Fondo Tech
+        container: 'bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 shadow-2xl',
         header: 'border-b border-slate-700/50',
         title: 'text-white font-bold text-lg tracking-tight',
         body: 'text-slate-300 font-sans text-sm leading-relaxed',
@@ -33,7 +30,6 @@ const JustificationModal = ({ isOpen, onClose, text, neighborhoodName, isGoTMode
             } ${theme.container}`}
         >
 
-            {/* Header */}
             <div className={`flex items-center justify-between p-5 ${theme.header} shrink-0`}>
                 <div className="flex items-center gap-3 overflow-hidden">
                     {theme.icon}
@@ -50,12 +46,10 @@ const JustificationModal = ({ isOpen, onClose, text, neighborhoodName, isGoTMode
                 </button>
             </div>
 
-            {/* Body Scrollable */}
             <div className={`flex-1 overflow-y-auto p-5 ${theme.scroll}`}>
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
                         <div className={`animate-spin ${theme.loaderColor}`}>
-                            {/* Icono de carga personalizado */}
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                 <path d="M12 18V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -75,7 +69,6 @@ const JustificationModal = ({ isOpen, onClose, text, neighborhoodName, isGoTMode
                     </div>
                 ) : (
                     <div className={theme.body}>
-                        {/* Renderizamos el texto con un fade-in suave cuando carga */}
                         <div className="animate-in fade-in duration-700">
                             {text ? text.split('\n').map((paragraph, idx) => (
                                 paragraph.trim() && (
@@ -93,7 +86,6 @@ const JustificationModal = ({ isOpen, onClose, text, neighborhoodName, isGoTMode
                 )}
             </div>
 
-            {/* Footer (Opcional) */}
             {!isLoading && text && (
                 <div className={`p-4 border-t shrink-0 ${isGoTMode ? 'border-[#d4af37]/20' : 'border-slate-700/50'}`}>
                     <button

@@ -1,6 +1,5 @@
 import laNeighborhoodsData from '../data/Neighborhood_Councils_(Certified).json';
 
-// URL DE TU BACKEND
 const API_URL = 'http://localhost:8000/api';
 
 export const SimulatedAPI = {
@@ -17,12 +16,10 @@ export const SimulatedAPI = {
             if (!response.ok) throw new Error(`Error Backend: ${response.statusText}`);
 
             const data = await response.json();
-            // El backend devuelve { metrics: { luxury_exclusivity: 8 ... } } o similar
             const rawParams = data.metrics || data.parameters || data;
 
             const normalizedParams = {};
 
-            // CLAVES LARGAS (Mismas que en tu App.jsx y Backend)
             const keys = [
                 'luxury_exclusivity',
                 'security_tranquility',
@@ -33,7 +30,6 @@ export const SimulatedAPI = {
 
             keys.forEach(key => {
                 const val = rawParams[key];
-                // Escalamos 0-10 -> 0-100 para los sliders del frontend
                 normalizedParams[key] = (typeof val === 'number') ? val * 10 : 50;
             });
 
@@ -41,7 +37,6 @@ export const SimulatedAPI = {
 
         } catch (error) {
             console.error("Error Parametrize:", error);
-            // Fallback con claves largas
             return {
                 luxury_exclusivity: 50,
                 security_tranquility: 50,
@@ -52,7 +47,7 @@ export const SimulatedAPI = {
         }
     },
 
-    // 2. RECOMENDACIÓN (SOLUCIÓN ERROR 422)
+    // 2. RECOMENDACIÓN
     getRecommendations: async (userParams) => {
         try {
             const safeParams = {
@@ -117,13 +112,17 @@ export const SimulatedAPI = {
             if (feature && feature.geometry) {
                 let center = [34.0522, -118.2437];
 
-                // Protección extra para evitar errores de coordenadas vacías en el mapa
-                const coords = feature.geometry.type === 'MultiPolygon'
-                    ? feature.geometry.coordinates[0][0]
-                    : feature.geometry.coordinates[0];
-
-                if (coords && coords.length > 0) {
-                    center = [coords[0][1], coords[0][0]];
+                try {
+                    const centroid = turf.centerOfMass(feature);
+                    const [lng, lat] = centroid.geometry.coordinates;
+                    center = [lat, lng];
+                } catch (e) {
+                    console.warn("Error calculando centroide con Turf, usando fallback simple", e);
+                    // Fallback simple
+                    const coords = feature.geometry.type === 'MultiPolygon'
+                        ? feature.geometry.coordinates[0][0]
+                        : feature.geometry.coordinates[0];
+                    if (coords && coords.length > 0) center = [coords[0][1], coords[0][0]];
                 }
 
                 return {
@@ -141,18 +140,16 @@ export const SimulatedAPI = {
 
     getJustification: async (neighborhoodData, isGoTMode) => {
         try {
-            // Preparamos el payload para tu endpoint /justify-results
-            // Tu endpoint espera: { text: {...}, got_mode: boolean }
             const payload = {
                 text: {
                     barrio: neighborhoodData.name,
                     score: neighborhoodData.score,
-                    razones: neighborhoodData.rawJustifications // Usamos las justificaciones crudas
+                    razones: neighborhoodData.rawJustifications
                 },
                 got_mode: isGoTMode
             };
 
-            const response = await fetch(`${API_URL}/llm/justify-results`, { // Usamos ruta raíz o api/justify-results según tu router
+            const response = await fetch(`${API_URL}/llm/justify-results`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
