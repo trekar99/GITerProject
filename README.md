@@ -59,7 +59,7 @@ Per configurar i executar el projecte de manera local:
 
 1.  **Instal·lació de Dependències:** Assegura't de tenir instal·lades totes les llibreries principals:
     ```bash
-    pip install -r requirements.txt
+    pip install -r requirements.txt 
     ```
 2.  **Descàrrega del Model NLP:** Executa l'script de descàrrega per guardar localment el model `distilbart-mnli-12-3` a `./modelos/zero_shot_local` (per a funcionament **sense internet**).
 3.  **Carrega de Dades (ETL):** Executa els scripts d'extracció i *spatial join* per omplir el *DataFrame* mestre de LA. (Aquest pas pot ser el més lent i només cal fer-lo una vegada). Pot ser executat en local amb Python o al núvol amb Google Collab.
