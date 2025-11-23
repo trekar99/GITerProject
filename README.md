@@ -1,4 +1,4 @@
-# ✨ 🏘️ LA Neighborhood Recommender - El Motor de Justificació (HackEPS 2025)
+# LA Neighborhood Recommender (HackEPS 2025)
 
 ## 💡 1. Visió General i El Valor Afegit Únic
 
@@ -29,10 +29,8 @@ El procés està dissenyat per gestionar l'**Input Semàntic** d'un client (incl
 
 1.  **Input Semàntic:** El text d'entrada es passa directament al mòdul d'IA.
 2.  **NLP Zero-Shot Classification:** Un model **Transformer** (`distilbart-mnli`) analitza el text i genera un **Vector de Pesos** per a les categories de l'algoritme (Tranquil·litat, Lujo, Mobilitat, etc.).
-    * ***Filtre d'Indiferència:*** Els pesos per sota d'un umbral s'anul·len (**forçats a zero**), evitant que temes irrellevants contaminin el càlcul.
-3.  **Taxonomia Hardcodejada:** Un diccionari intern (Taxonomia) tradueix els **Pesos (Conceptes Humans)** a les **Columnes Tècniques** del *DataFrame* (Ex: Tranquil·litat $\rightarrow$ `nivell_soroll_invers`).
-4.  **Algoritme de Decisió (Suma Ponderada):** S'aplica el càlcul final sobre els 99 barris:
-    $$\text{Score}_{\text{Final}} = \sum (\text{Pes}_{\text{IA}} \times \text{Valor}_{\text{Normalitzat}})$$
+3.  **Taxonomia Hardcodejada:** Un diccionari intern (Taxonomia) tradueix els **Pesos (Conceptes Humans)** a les **Columnes Tècniques** del *DataFrame*.
+4.  **Algoritme de Decisió (Suma Ponderada):** S'aplica el càlcul final sobre els 99 barris.
 
 ### 2.2. Dades Geoespacials Integrades
 
@@ -53,7 +51,7 @@ Les recomanacions es basen en una combinació de dades de qualitat de **Los Ange
 | **Core & ETL** | Python (**Pandas**, **GeoPandas**) | Processament de dades geoespacials i *Spatial Join* |
 | **NLP Engine** | `transformers` | Interpretació del text del Client (Zero-Shot Classification) |
 | **Dades Geo** | `requests` / Overpass QL | Descàrrega de dades d'OpenStreetMap (Punts d'Interès) |
-| **Visualització** | Matplotlib / Folium / **[Nom del teu Framework UI/Desplegament]** | Mapa interactiu de calor i Panell de Justificació |
+| **Visualització** | React + Vite | Mapa interactiu i Panell de Justificació |
 
 ### 3.2. Passos per Executar (Local)
 
@@ -78,7 +76,7 @@ Per configurar i executar el projecte de manera local:
 ## 🤝 4. Membres de l'Equip i Contacte
 
 * **Hardware Engineer:** Enric Esteve Pons
-* **AI Engineer:** Germán Puerto Rodríguez
+* **AI Engineer:** Germán Puerto Rodríguez 
 * **Data Anal Engineer:** Ivan Arenal
 * **GUI Engineer:** Josep Lluis Marín
 
