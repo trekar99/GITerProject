@@ -1,0 +1,34 @@
+{
+  "TAXONOMIA": {
+    "vida nocturna y social": [
+      "bar",
+      "restaurants",
+      "gym_fitness",
+      "nightclub",
+      "pub"
+    ],
+    "seguridad y tranquilidad": [
+      "security",
+      "Densidad_Poblacion",
+      "hospitals"
+    ],
+    "naturaleza y aire libre": [
+      "parks",
+      "dog_parks"
+    ],
+    "lujo y exclusividad": [
+      "Avg_price",
+      "luxury_shops",
+      "clothes_shop",
+      "private_school"
+    ],
+    "conectividad y servicios": [
+      "public_transport",
+      "bus",
+      "cafe",
+      "supermarkets",
+      "restaurants",
+      "school"
+    ]
+  }
+}
