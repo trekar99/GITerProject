@@ -101,7 +101,7 @@ export default function App() {
         setLoadingJustification(true);
         setIsModalOpen(true);
 
-        const text = await APIService.getJustification(targetNeighborhood, isGoTMode);
+        const text = await APIS.getJustification(targetNeighborhood, isGoTMode);
         setJustificationText(text);
         setLoadingJustification(false);
     };
@@ -314,7 +314,7 @@ export default function App() {
                                                     ? 'bg-[#2f3325] text-[#a3b18a] border border-[#5c664a]'
                                                     : 'bg-emerald-400/10 text-emerald-400'
                                             }`}>
-                                                {item.score}% Match
+                                                {item.score > 100 ? 100 : item.score}% Match
                                             </span>
                                         </div>
                                         <p className={`text-xs line-clamp-2 mb-2 ${theme.textSecondary}`}>

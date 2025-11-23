@@ -99,7 +99,7 @@ class RecommendationService:
 
             results.append({
                 "barrio": row["Neighborhood"],
-                "score": round(float(row["score_final"]), 2),
+                "score": min(round(float(row["score_final"]), 2), 100),
                 "justificaciones": aportes_ordenados[:3]  # Top 3 razones
             })
 
