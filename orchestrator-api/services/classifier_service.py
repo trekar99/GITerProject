@@ -14,7 +14,6 @@ class ClassifierService:
             device_map="auto"
         )
 
-        # Labels naturales en español (mejor comprensión del modelo multilingüe)
         self.labels = [
             "vida nocturna y social",
             "seguridad y tranquilidad",
@@ -32,7 +31,6 @@ class ClassifierService:
             multi_label=True
         )
 
-        # Mapea label → score decimal
         raw_scores = {label: score for label, score in zip(result["labels"], result["scores"])}
 
         return {

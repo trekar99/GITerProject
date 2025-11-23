@@ -9,7 +9,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# --- CONFIGURACIÓN CORS (CRUCIAL PARA QUE EL FRONTEND SE CONECTE) ---
+# --- CONFIGURACIÓN CORS ---
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -25,7 +25,6 @@ app.add_middleware(
 )
 # ------------------------------------------------------------------
 
-# Registrar rutas
 app.include_router(llm.router, prefix="/api/llm", tags=["LLM"])
 app.include_router(classify.router, prefix="/api", tags=["LLM"])
 app.include_router(recommend.router, prefix="/api", tags=["LLM"])

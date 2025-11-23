@@ -10,7 +10,6 @@ class GeminiClient:
         
     async def generate_content(self, prompt: str) -> str:
         try:
-            # Usamos generate_content_async para no bloquear el servidor
             response = await self.model.generate_content_async(prompt)
             return response.text
         except Exception as e:

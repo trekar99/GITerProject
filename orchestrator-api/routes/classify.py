@@ -4,7 +4,6 @@ from services.classifier_service import ClassifierService
 
 router = APIRouter()
 
-# Instanciamos ambos servicios
 classifier_service = ClassifierService()
 
 @router.post("/parametrize", response_model=Metrics)

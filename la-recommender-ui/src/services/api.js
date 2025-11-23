@@ -2,7 +2,7 @@ import laNeighborhoodsData from '../data/Neighborhood_Councils_(Certified).json'
 
 const API_URL = 'http://localhost:8000/api';
 
-export const SimulatedAPI = {
+export const APIService = {
 
     // 1. TEXTO -> PARÁMETROS
     parseTextToParams: async (text) => {

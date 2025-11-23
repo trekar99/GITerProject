@@ -3,7 +3,6 @@ from pathlib import Path
 
 def load_prompt_template(prompt) -> str:
     try:
-        # Obtiene la ruta absoluta de este archivo y navega hasta el prompt
         current_dir = Path(__file__).parent
         prompt_path = current_dir.parent / "prompts" / f"{prompt}.md"
         

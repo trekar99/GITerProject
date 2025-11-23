@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Send, MapPin, Sliders, MessageSquare, Info, ChevronRight, Loader2, Shield, Trees, DollarSign, Music, Car, Trophy, Crown, Scroll, X, User, Feather } from 'lucide-react';
-import { SimulatedAPI } from './services/api';
+import { APIService } from './services/api';
 import Map3D from './components/Map3D';
 import SliderControl from './components/SliderControl';
 import JustificationModal from './components/JustificationModal';
@@ -57,7 +57,7 @@ export default function App() {
         if (!chatText.trim()) return;
         setViewState('loading_params');
         try {
-            const params = await SimulatedAPI.parseTextToParams(chatText);
+            const params = await APIService.parseTextToParams(chatText);
             setParameters(params);
             setViewState('tuning');
         } catch (error) {
@@ -69,7 +69,7 @@ export default function App() {
     const handleGetRecommendation = async () => {
         setViewState('loading_result');
         try {
-            const data = await SimulatedAPI.getRecommendations(parameters);
+            const data = await APIService.getRecommendations(parameters);
             setResults(data);
             setViewState('result');
         } catch (error) {
@@ -85,7 +85,7 @@ export default function App() {
         let targetNeighborhood = neighborhood;
 
         if (!targetNeighborhood.polygonGeoJSON) {
-            const polygonData = SimulatedAPI.getNeighborhoodPolygonLocal(neighborhood.geojsonName);
+            const polygonData = APIService.getNeighborhoodPolygonLocal(neighborhood.geojsonName);
             if (polygonData) {
                 targetNeighborhood = {
                     ...neighborhood,
@@ -101,7 +101,7 @@ export default function App() {
         setLoadingJustification(true);
         setIsModalOpen(true);
 
-        const text = await SimulatedAPI.getJustification(targetNeighborhood, isGoTMode);
+        const text = await APIService.getJustification(targetNeighborhood, isGoTMode);
         setJustificationText(text);
         setLoadingJustification(false);
     };
