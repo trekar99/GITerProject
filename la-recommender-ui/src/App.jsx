@@ -7,6 +7,11 @@ import JustificationModal from './components/JustificationModal';
 
 const PERSONAS = [
     {
+        name: "Samwell Tarly",
+        role: "El Académico Familiar",
+        desc: "Un amable investigador académico y padre temprano. Samwell traslada a su joven familia a Los Ángeles con un salario universitario modesto. Su búsqueda se centra únicamente en encontrar un barrio tranquilo, seguro y asequible en el que su hijo pueda crecer, con buenos parques y una biblioteca cerca."
+    },
+    {
         name: "Daenerys",
         role: "Emprendedora Ética",
         desc: "Fundadora de una startup sostenible, es nueva en la ciudad con sus tres \"dragones\" (así le gusta referirse a sus perros). Busca un barrio con alma, lleno de negocios locales y con un fuerte sentido de comunidad."
@@ -101,7 +106,7 @@ export default function App() {
         setLoadingJustification(true);
         setIsModalOpen(true);
 
-        const text = await APIS.getJustification(targetNeighborhood, isGoTMode);
+        const text = await APIService.getJustification(targetNeighborhood, isGoTMode);
         setJustificationText(text);
         setLoadingJustification(false);
     };
@@ -148,7 +153,7 @@ export default function App() {
                 isLoading={loadingJustification}
             />
 
-            <div className={`absolute inset-0 z-0 transition-all duration-1000 ${isGoTMode ? 'sepia-[0.6] brightness-[0.7] contrast-125 hue-rotate-[5deg]' : ''}`}>
+            <div className={`absolute inset-0 z-0 transition-all duration-1000 ${isGoTMode ? 'sepia-[0.4] brightness-[1.2] contrast-125 hue-rotate-[5deg]' : ''}`}>
                 <Map3D
                     neighborhoods={results}
                     focusedNeighborhood={selectedNeighborhood}
