@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Send, MapPin, Sliders, MessageSquare, Info, ChevronRight, Loader2, Shield, Trees, DollarSign, Music, Car, Trophy, Crown, Scroll, X, User } from 'lucide-react';
+import { Send, MapPin, Sliders, MessageSquare, Info, ChevronRight, Loader2, Shield, Trees, DollarSign, Music, Car, Trophy, Crown, Scroll, X, User, Feather } from 'lucide-react';
 import { SimulatedAPI } from './services/api';
 import Map3D from './components/Map3D';
 import SliderControl from './components/SliderControl';
+import JustificationModal from './components/JustificationModal';
 
-// DATOS DE LOS PERSONAJES DEL PDF (EN CASTELLANO)
 const PERSONAS = [
     {
         name: "Daenerys",
@@ -46,9 +46,11 @@ export default function App() {
 
     const [results, setResults] = useState([]);
     const [selectedNeighborhood, setSelectedNeighborhood] = useState(null);
-    const [loadingPolygon, setLoadingPolygon] = useState(false);
 
-    // --- MODO JUEGO DE TRONOS ---
+    const [justificationText, setJustificationText] = useState('');
+    const [loadingJustification, setLoadingJustification] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const [isGoTMode, setIsGoTMode] = useState(false);
 
     const handleAnalyzeText = async () => {
@@ -76,24 +78,32 @@ export default function App() {
         }
     };
 
-    const handleSelectNeighborhood = (neighborhood) => {
+    const handleSelectNeighborhood = async (neighborhood) => {
         setViewState('result');
+        if (!isOpen) setIsOpen(true);
+
         let targetNeighborhood = neighborhood;
 
         if (!targetNeighborhood.polygonGeoJSON) {
             const polygonData = SimulatedAPI.getNeighborhoodPolygonLocal(neighborhood.geojsonName);
-
             if (polygonData) {
                 targetNeighborhood = {
                     ...neighborhood,
-                    polygonGeoJSON: polygonData.geojson
+                    polygonGeoJSON: polygonData.geojson,
+                    center: polygonData.calculatedCenter || neighborhood.center
                 };
-                setResults(prevResults => prevResults.map(item =>
-                    item.id === neighborhood.id ? targetNeighborhood : item
-                ));
+                setResults(prev => prev.map(item => item.id === neighborhood.id ? targetNeighborhood : item));
             }
         }
         setSelectedNeighborhood(targetNeighborhood);
+
+        setJustificationText('');
+        setLoadingJustification(true);
+        setIsModalOpen(true);
+
+        const text = await SimulatedAPI.getJustification(targetNeighborhood, isGoTMode);
+        setJustificationText(text);
+        setLoadingJustification(false);
     };
 
     const resetSearch = () => {
@@ -101,10 +111,11 @@ export default function App() {
         setParameters(null);
         setResults([]);
         setSelectedNeighborhood(null);
+        setJustificationText('');
+        setIsModalOpen(false);
         setViewState('input');
     };
 
-    // --- ESTILOS DINÁMICOS ---
     const theme = isGoTMode ? {
         bg: 'bg-[#0f0a05]',
         sidebarBg: 'bg-[#1c1610]/95 border-[#d4af37]/20',
@@ -128,20 +139,27 @@ export default function App() {
     return (
         <div className={`relative w-full h-screen overflow-hidden ${theme.bg} transition-colors duration-700`}>
 
-            {/* MAPA 3D */}
+            <JustificationModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                text={justificationText}
+                neighborhoodName={selectedNeighborhood?.name}
+                isGoTMode={isGoTMode}
+                isLoading={loadingJustification}
+            />
+
             <div className={`absolute inset-0 z-0 transition-all duration-1000 ${isGoTMode ? 'sepia-[0.6] brightness-[0.7] contrast-125 hue-rotate-[5deg]' : ''}`}>
                 <Map3D
                     neighborhoods={results}
                     focusedNeighborhood={selectedNeighborhood}
                     mapStyle={theme.mapStyle}
                     isGoTMode={isGoTMode}
+                    onSelectNeighborhood={handleSelectNeighborhood}
                 />
             </div>
 
-            {/* SIDEBAR */}
             <div className={`absolute top-4 left-4 bottom-4 w-96 rounded-2xl shadow-2xl flex flex-col transition-all duration-500 z-10 ${theme.sidebarBg} ${isOpen ? 'translate-x-0' : '-translate-x-[110%]'}`}>
 
-                {/* Header */}
                 <div className="p-6 border-b border-white/5 flex justify-between items-start shrink-0">
                     <div>
                         <h1 className={`text-2xl tracking-tight flex items-center gap-2 ${theme.textPrimary}`}>
@@ -155,7 +173,6 @@ export default function App() {
 
                     <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-1">
-                            {/* SWITCH DE MODO */}
                             <button
                                 onClick={() => setIsGoTMode(!isGoTMode)}
                                 className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/50 hover:text-white"
@@ -164,7 +181,6 @@ export default function App() {
                                 {isGoTMode ? <Scroll size={20} className="text-[#d4af37] animate-pulse" /> : <Crown size={20} />}
                             </button>
 
-                            {/* BOTÓN CERRAR */}
                             <button
                                 onClick={() => setIsOpen(false)}
                                 className={`p-2 rounded-full hover:bg-white/10 transition-colors ${isGoTMode ? 'text-[#d4af37]' : 'text-slate-400 hover:text-white'}`}
@@ -182,10 +198,8 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* Contenido */}
                 <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
 
-                    {/* VISTA 1: INPUT */}
                     {viewState === 'input' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
                             <div className={`p-4 rounded-xl border ${isGoTMode ? 'bg-[#3e3327]/40 border-[#d4af37]/30' : 'bg-violet-500/10 border-violet-500/20'}`}>
@@ -202,7 +216,6 @@ export default function App() {
                                 onChange={(e) => setChatText(e.target.value)}
                             />
 
-                            {/* SECCIÓN DE PERFILES PREDEFINIDOS */}
                             <div className="space-y-3 pt-2">
                                 <p className={`text-xs uppercase tracking-wider font-bold ${theme.textSecondary}`}>
                                     {isGoTMode ? "Elegir un Pretendiente" : "Perfiles Rápidos"}
@@ -232,7 +245,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* LOADERS */}
                     {(viewState === 'loading_params' || viewState === 'loading_result') && (
                         <div className="h-full flex flex-col items-center justify-center space-y-4">
                             <Loader2 className={`animate-spin ${isGoTMode ? 'text-[#d4af37]' : 'text-violet-500'}`} size={40} />
@@ -242,7 +254,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* VISTA 3: TUNING */}
                     {viewState === 'tuning' && parameters && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                             <div className={`p-4 rounded-xl border ${isGoTMode ? 'bg-[#3e3327]/20 border-[#d4af37]/20' : 'bg-slate-800/50 border-slate-700'}`}>
@@ -252,41 +263,11 @@ export default function App() {
                                 </h3>
                             </div>
                             <div className="space-y-2">
-                                <SliderControl
-                                    label={isGoTMode ? "Defensas y Muros" : "Seguridad"}
-                                    icon={Shield}
-                                    value={parameters.security_tranquility}
-                                    onChange={(v) => setParameters({...parameters, security_tranquility: v})}
-                                    isGoT={isGoTMode}
-                                />
-                                <SliderControl
-                                    label={isGoTMode ? "Oro y Riquezas" : "Lujo"}
-                                    icon={DollarSign}
-                                    value={parameters.luxury_exclusivity}
-                                    onChange={(v) => setParameters({...parameters, luxury_exclusivity: v})}
-                                    isGoT={isGoTMode}
-                                />
-                                <SliderControl
-                                    label={isGoTMode ? "Bosques de Dioses" : "Naturaleza"}
-                                    icon={Trees}
-                                    value={parameters.nature_outdoors}
-                                    onChange={(v) => setParameters({...parameters, nature_outdoors: v})}
-                                    isGoT={isGoTMode}
-                                />
-                                <SliderControl
-                                    label={isGoTMode ? "Festines y Vino" : "Vida Nocturna"}
-                                    icon={Music}
-                                    value={parameters.nightlife_social}
-                                    onChange={(v) => setParameters({...parameters, nightlife_social: v})}
-                                    isGoT={isGoTMode}
-                                />
-                                <SliderControl
-                                    label={isGoTMode ? "Caminos Reales" : "Movilidad"}
-                                    icon={Car}
-                                    value={parameters.connectivity_services}
-                                    onChange={(v) => setParameters({...parameters, connectivity_services: v})}
-                                    isGoT={isGoTMode}
-                                />
+                                <SliderControl label={isGoTMode ? "Defensas y Muros" : "Seguridad"} icon={Shield} value={parameters.security_tranquility} onChange={(v) => setParameters({...parameters, security_tranquility: v})} isGoT={isGoTMode} />
+                                <SliderControl label={isGoTMode ? "Oro y Riquezas" : "Lujo"} icon={DollarSign} value={parameters.luxury_exclusivity} onChange={(v) => setParameters({...parameters, luxury_exclusivity: v})} isGoT={isGoTMode} />
+                                <SliderControl label={isGoTMode ? "Bosques de Dioses" : "Naturaleza"} icon={Trees} value={parameters.nature_outdoors} onChange={(v) => setParameters({...parameters, nature_outdoors: v})} isGoT={isGoTMode} />
+                                <SliderControl label={isGoTMode ? "Festines y Vino" : "Vida Nocturna"} icon={Music} value={parameters.nightlife_social} onChange={(v) => setParameters({...parameters, nightlife_social: v})} isGoT={isGoTMode} />
+                                <SliderControl label={isGoTMode ? "Caminos Reales" : "Movilidad"} icon={Car} value={parameters.connectivity_services} onChange={(v) => setParameters({...parameters, connectivity_services: v})} isGoT={isGoTMode} />
                             </div>
                             <button onClick={handleGetRecommendation} className={`w-full py-3 rounded-xl font-semibold mt-4 flex justify-center gap-2 shadow-lg transition-all ${isGoTMode ? 'bg-[#1f4e1f] hover:bg-[#2b6b2b] text-[#d4af37] border border-[#d4af37] font-got' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}>
                                 <Send size={18} />
@@ -295,7 +276,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* VISTA 5: RESULTADOS */}
                     {viewState === 'result' && results.length > 0 && (
                         <div className="space-y-4 animate-in zoom-in-95 duration-500">
                             <div className="flex items-center gap-2 mb-4">
@@ -342,7 +322,8 @@ export default function App() {
                                         </p>
                                         {isSelected && (
                                             <div className={`text-[10px] font-medium animate-in fade-in flex items-center gap-1 mt-2 ${isGoTMode ? 'text-[#d4af37]' : 'text-violet-300'}`}>
-                                                <Info size={10} /> {isGoTMode ? "Observando dominios..." : "Visualizando en mapa 3D"}
+                                                <Info size={10} />
+                                                {loadingJustification ? "Analizando..." : (isGoTMode ? "Ver veredicto del maestre" : "Ver análisis IA")}
                                             </div>
                                         )}
                                         {isSelected && !item.polygonGeoJSON && (
@@ -363,7 +344,6 @@ export default function App() {
                 </div>
             </div>
 
-            {/* BOTÓN DE ABRIR (Solo visible cuando el menú está cerrado) */}
             <button
                 onClick={() => setIsOpen(true)}
                 className={`absolute top-6 left-0 z-20 p-3 rounded-r-xl border-y border-r shadow-lg transition-all duration-300

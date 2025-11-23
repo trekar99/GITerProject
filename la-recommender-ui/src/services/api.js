@@ -1,53 +1,13 @@
-// Importamos el archivo GeoJSON local
 import laNeighborhoodsData from '../data/Neighborhood_Councils_(Certified).json';
 
 // URL DE TU BACKEND
-const API_URL = 'http://79.143.89.115:8000/api';
-
-// Datos estáticos de los barrios (Stats del 0 al 100, así que encajan con la conversión que haremos)
-export const MOCK_NEIGHBORHOODS = {
-    'echo_park': {
-        id: 'echo_park',
-        name: 'Echo Park',
-        geojsonName: 'ECHO PARK NC',
-        description: 'Vida urbana relajada, lago con patos y cafés hipster.',
-        stats: { luxury_exclusivity: 40, security_tranquility: 60, nature_outdoors: 80, nightlife_social: 70, connectivity_services: 60 },
-        center: [34.078, -118.260]
-    },
-    'bel_air': {
-        id: 'bel_air',
-        name: 'Bel Air - Beverly Crest',
-        geojsonName: 'BEL AIR-BEVERLY CREST NC',
-        description: 'Privacidad absoluta, mansiones en las colinas y vistas exclusivas.',
-        stats: { luxury_exclusivity: 100, security_tranquility: 90, nature_outdoors: 60, nightlife_social: 20, connectivity_services: 40 },
-        center: [34.105, -118.445]
-    },
-    'venice': {
-        id: 'venice',
-        name: 'Venice Beach',
-        geojsonName: 'VENICE NC',
-        description: 'Espíritu libre, canales, playa y arte callejero.',
-        stats: { luxury_exclusivity: 70, security_tranquility: 60, nature_outdoors: 90, nightlife_social: 80, connectivity_services: 70 },
-        center: [33.990, -118.465]
-    },
-    'silver_lake': {
-        id: 'silver_lake',
-        name: 'Silver Lake',
-        geojsonName: 'SILVER LAKE NC',
-        description: 'Bohemio, auténtico y comunitario.',
-        stats: { luxury_exclusivity: 50, security_tranquility: 60, nature_outdoors: 50, nightlife_social: 70, connectivity_services: 50 },
-        center: [34.090, -118.275]
-    }
-};
+const API_URL = 'http://localhost:8000/api';
 
 export const SimulatedAPI = {
 
-    // 1. LLAMADA REAL: Texto -> Parámetros (CONVERTIDOS A %)
+    // 1. TEXTO -> PARÁMETROS
     parseTextToParams: async (text) => {
         try {
-            console.log("Enviando prompt al backend:", text);
-
-            // Usamos 'prompt' porque tu modelo Pydantic ChatRequest lo define así
             const response = await fetch(`${API_URL}/parametrize`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -57,82 +17,155 @@ export const SimulatedAPI = {
             if (!response.ok) throw new Error(`Error Backend: ${response.statusText}`);
 
             const data = await response.json();
+            // El backend devuelve { metrics: { luxury_exclusivity: 8 ... } } o similar
+            const rawParams = data.metrics || data.parameters || data;
 
-            // Obtenemos los datos crudos (0-10)
-            // Tu backend devuelve algo como: { luxury_exclusivity: 8, security_tranquility: 5 ... }
-            const rawParams = data.parameters || data;
-
-            console.log("Valores originales del Backend (0-10):", rawParams);
-
-            // --- TRANSFORMACIÓN DE DATOS (0-10 -> 0-100) ---
             const normalizedParams = {};
 
-            // Iteramos por cada clave (luxury_exclusivity, security_tranquility...) y multiplicamos por 10
-            Object.keys(rawParams).forEach(key => {
-                const value = rawParams[key];
-                if (typeof value === 'number') {
-                    normalizedParams[key] = value * 10; // Escalar al 100%
-                } else {
-                    normalizedParams[key] = value;
-                }
-            });
+            // CLAVES LARGAS (Mismas que en tu App.jsx y Backend)
+            const keys = [
+                'luxury_exclusivity',
+                'security_tranquility',
+                'nature_outdoors',
+                'nightlife_social',
+                'connectivity_services'
+            ];
 
-            console.log("Valores normalizados para Frontend (0-100):", normalizedParams);
+            keys.forEach(key => {
+                const val = rawParams[key];
+                // Escalamos 0-10 -> 0-100 para los sliders del frontend
+                normalizedParams[key] = (typeof val === 'number') ? val * 10 : 50;
+            });
 
             return normalizedParams;
 
         } catch (error) {
-            console.error("Error API Parametrize:", error);
-            // Fallback en escala 0-100
-            return { luxury_exclusivity: 50, security_tranquility: 50, nature_outdoors: 50, nightlife_social: 50, connectivity_services: 50 };
+            console.error("Error Parametrize:", error);
+            // Fallback con claves largas
+            return {
+                luxury_exclusivity: 50,
+                security_tranquility: 50,
+                nature_outdoors: 50,
+                nightlife_social: 50,
+                connectivity_services: 50
+            };
         }
     },
 
-    // 2. Lógica Local de Recomendación
+    // 2. RECOMENDACIÓN (SOLUCIÓN ERROR 422)
     getRecommendations: async (userParams) => {
         try {
-            return new Promise((resolve) => {
-                // userParams ya viene en escala 0-100 gracias a la función de arriba
-                const scored = Object.values(MOCK_NEIGHBORHOODS).map(nb => {
-                    let diff = 0;
-                    Object.keys(userParams).forEach(key => {
-                        // nb.stats también está en 0-100, así que la resta es correcta
-                        diff += Math.abs(userParams[key] - (nb.stats[key] || 50));
-                    });
+            const safeParams = {
+                luxury_exclusivity: userParams.luxury_exclusivity || 0,
+                security_tranquility: userParams.security_tranquility || 0,
+                nature_outdoors: userParams.nature_outdoors || 0,
+                nightlife_social: userParams.nightlife_social || 0,
+                connectivity_services: userParams.connectivity_services || 0
+            };
 
-                    // 500 es la diferencia máxima posible (5 params * 100 de diferencia)
-                    // Calculamos el porcentaje de match
-                    const matchScore = Math.max(0, 100 - (diff / 5));
+            const metricsPayload = {
+                luxury_exclusivity: Math.round(safeParams.luxury_exclusivity / 10),
+                security_tranquility: Math.round(safeParams.security_tranquility / 10),
+                nature_outdoors: Math.round(safeParams.nature_outdoors / 10),
+                nightlife_social: Math.round(safeParams.nightlife_social / 10),
+                connectivity_services: Math.round(safeParams.connectivity_services / 10)
+            };
 
-                    return { ...nb, score: Math.round(matchScore) };
-                });
+            console.log("🚀 Enviando métricas (Enteros) al backend:", metricsPayload);
 
-                scored.sort((a, b) => b.score - a.score);
-                resolve(scored);
+            const response = await fetch(`${API_URL}/recommend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(metricsPayload)
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("🔥 Error Backend Detallado:", errorText);
+                throw new Error(`Error Recomendador (${response.status})`);
+            }
+
+            const data = await response.json();
+
+            return data.map((item, index) => ({
+                id: `result_${index}`,
+                name: item.barrio,
+                geojsonName: item.barrio.toUpperCase(),
+                score: Math.round(item.score * 10),
+                description: `Destaca por: ${item.justificaciones ? item.justificaciones.slice(0, 3).map(j => j.feature).join(', ') : 'N/A'}`,
+                center: [34.0522, -118.2437]
+            }));
+
         } catch (error) {
             console.error("Error recomendando:", error);
             return [];
         }
     },
 
-    // 3. Búsqueda Local de Polígonos
+    // 3. BÚSQUEDA LOCAL POLÍGONOS
     getNeighborhoodPolygonLocal: (targetName) => {
         try {
-            const feature = laNeighborhoodsData.features.find(
-                f => f.properties.NAME === targetName
-            );
+            if (!targetName) return null;
 
-            if (feature) {
+            const cleanTarget = targetName.toUpperCase().replace(' NC', '').trim();
+
+            const feature = laNeighborhoodsData.features.find(f => {
+                const fName = f.properties.NAME.toUpperCase();
+                return fName === targetName.toUpperCase() || fName.includes(cleanTarget);
+            });
+
+            if (feature && feature.geometry) {
+                let center = [34.0522, -118.2437];
+
+                // Protección extra para evitar errores de coordenadas vacías en el mapa
+                const coords = feature.geometry.type === 'MultiPolygon'
+                    ? feature.geometry.coordinates[0][0]
+                    : feature.geometry.coordinates[0];
+
+                if (coords && coords.length > 0) {
+                    center = [coords[0][1], coords[0][0]];
+                }
+
                 return {
                     geojson: feature.geometry,
-                    display_name: feature.properties.NAME
+                    display_name: feature.properties.NAME,
+                    calculatedCenter: center
                 };
             }
             return null;
         } catch (error) {
             console.error("Error local geojson:", error);
             return null;
+        }
+    },
+
+    getJustification: async (neighborhoodData, isGoTMode) => {
+        try {
+            // Preparamos el payload para tu endpoint /justify-results
+            // Tu endpoint espera: { text: {...}, got_mode: boolean }
+            const payload = {
+                text: {
+                    barrio: neighborhoodData.name,
+                    score: neighborhoodData.score,
+                    razones: neighborhoodData.rawJustifications // Usamos las justificaciones crudas
+                },
+                got_mode: isGoTMode
+            };
+
+            const response = await fetch(`${API_URL}/llm/justify-results`, { // Usamos ruta raíz o api/justify-results según tu router
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Error al justificar");
+
+            const data = await response.json();
+            return data.justification;
+
+        } catch (error) {
+            console.error("Error obteniendo justificación:", error);
+            return "Los maestres están en silencio hoy. (Error de conexión)";
         }
     }
 };

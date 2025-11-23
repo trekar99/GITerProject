@@ -4,12 +4,17 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 const MAPBOX_TOKEN = 'pk.eyJ1Ijoiam9zZXBsbG10MjAiLCJhIjoiY21pYWY5aDg5MHhmZTJpczk5ODcxYmlmayJ9.guB9Abh7CFwHL_3FYRlEKQ';
 
-const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode }) => {
+const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode, onSelectNeighborhood }) => {
     const mapRef = useRef(null);
 
-    // Generamos la fuente GeoJSON solo para los barrios que YA tengan polígono cargado
+    // Generamos el GeoJSON de forma SEGURA
     const geoJSONData = useMemo(() => {
-        const readyNeighborhoods = neighborhoods.filter(nb => nb.polygonGeoJSON);
+        // Filtramos barrios que tengan polígono Y que el polígono tenga coordenadas válidas
+        const readyNeighborhoods = neighborhoods.filter(nb =>
+            nb.polygonGeoJSON &&
+            nb.polygonGeoJSON.coordinates &&
+            nb.polygonGeoJSON.coordinates.length > 0
+        );
 
         if (readyNeighborhoods.length === 0) return null;
 
@@ -23,10 +28,13 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode })
         };
     }, [neighborhoods]);
 
-    // Efecto de vuelo
+    // Efecto de vuelo (flyTo) - También protegido
     useEffect(() => {
-        if (focusedNeighborhood && mapRef.current) {
+        if (focusedNeighborhood && mapRef.current && focusedNeighborhood.center) {
             const [lat, lng] = focusedNeighborhood.center;
+
+            // Pequeña validación de coordenadas
+            if (isNaN(lat) || isNaN(lng)) return;
 
             mapRef.current.flyTo({
                 center: [lng, lat],
@@ -39,12 +47,27 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode })
         }
     }, [focusedNeighborhood]);
 
-    // --- COLORES DINÁMICOS SEGÚN EL MODO ---
+    // --- COLORES DINÁMICOS ---
     const polygonColors = {
-        fillActive: isGoTMode ? '#7f1d1d' : '#8b5cf6',   // Rojo Sangre vs Violeta Tech
-        fillInactive: isGoTMode ? '#2c1810' : '#475569', // Marrón oscuro vs Gris
-        line: isGoTMode ? '#d4af37' : '#a78bfa',         // Dorado vs Violeta claro
+        fillActive: isGoTMode ? '#7f1d1d' : '#8b5cf6',
+        fillInactive: isGoTMode ? '#2c1810' : '#475569',
+        line: isGoTMode ? '#d4af37' : '#a78bfa',
         opacity: isGoTMode ? 0.5 : 0.6
+    };
+
+    // Manejador de clics
+    const onMapClick = (event) => {
+        const features = event.features;
+        if (features && features.length > 0) {
+            const clickedFeature = features.find(f => f.layer.id === 'neighborhood-fill');
+            if (clickedFeature) {
+                const neighborhoodId = clickedFeature.properties.id;
+                const selected = neighborhoods.find(nb => nb.id === neighborhoodId);
+                if (selected && onSelectNeighborhood) {
+                    onSelectNeighborhood(selected);
+                }
+            }
+        }
     };
 
     return (
@@ -61,6 +84,8 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode })
             mapStyle={mapStyle || "mapbox://styles/mapbox/dark-v11"}
             mapboxAccessToken={MAPBOX_TOKEN}
             terrain={{ source: 'mapbox-dem', exaggeration: 1.5 }}
+            onClick={onMapClick}
+            interactiveLayerIds={['neighborhood-fill']}
         >
             <Layer
                 id="3d-buildings"
@@ -70,7 +95,7 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode })
                 type="fill-extrusion"
                 minzoom={13}
                 paint={{
-                    'fill-extrusion-color': isGoTMode ? '#3e3327' : '#aaa', // Edificios marrones en GoT
+                    'fill-extrusion-color': isGoTMode ? '#3e3327' : '#aaa',
                     'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
                     'fill-extrusion-opacity': 0.6
                 }}
@@ -97,7 +122,7 @@ const Map3D = ({ neighborhoods = [], focusedNeighborhood, mapStyle, isGoTMode })
                         paint={{
                             'line-color': polygonColors.line,
                             'line-width': 3,
-                            'line-blur': isGoTMode ? 1 : 0 // Un poco de difuminado "mágico" en GoT
+                            'line-blur': isGoTMode ? 1 : 0
                         }}
                     />
                 </Source>
