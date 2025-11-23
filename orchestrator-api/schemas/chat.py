@@ -9,6 +9,7 @@ class ChatResponse(BaseModel):
 
 class JustifyRequest(BaseModel):
     text: Any
+    got_mode: bool
 
 class Metrics(BaseModel):
     nightlife_social: float = Field(..., ge=0, le=10, description="Nivel de vida nocturna / social (0-10)")

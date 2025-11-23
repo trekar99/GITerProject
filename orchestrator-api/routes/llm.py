@@ -11,7 +11,7 @@ llm_service = LLMService()
 async def justify_results(payload: JustifyRequest):
     try:
         text = json.dumps(payload.text)
-        result = await llm_service.justify_result(text)
+        result = await llm_service.justify_result(text, payload.got_mode)
         return {"justification": result}
 
     except Exception as e:

@@ -10,8 +10,11 @@ class LLMService:
     def __init__(self):
         self.gemini_client = GeminiClient()
 
-    async def justify_result(self, json_result: str) -> str:
-        prompt_template = load_prompt_template("justify-prompt")
+    async def justify_result(self, json_result: str, got_mode: bool) -> str:
+        if (got_mode):
+            prompt_template = load_prompt_template("justify-prompt-GoT")
+        else:
+            prompt_template = load_prompt_template("justify-prompt")
 
         if not prompt_template:
             return "Error: Prompt template not found."
