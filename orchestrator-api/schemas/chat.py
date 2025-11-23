@@ -1,10 +1,14 @@
 from pydantic import BaseModel, Field
+from typing import Any
 
 class ChatRequest(BaseModel):
     prompt: str
 
 class ChatResponse(BaseModel):
     response: str
+
+class JustifyRequest(BaseModel):
+    text: Any
 
 class Metrics(BaseModel):
     nightlife_social: int = Field(..., ge=0, le=10, description="Nivel de vida nocturna / social (0-10)")

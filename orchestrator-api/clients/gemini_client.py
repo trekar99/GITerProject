@@ -6,7 +6,7 @@ settings = get_settings()
 class GeminiClient:
     def __init__(self):
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel("gemini-2.5-pro")
+        self.model = genai.GenerativeModel("gemini-2.0-flash-lite")
         
     async def generate_content(self, prompt: str) -> str:
         try:

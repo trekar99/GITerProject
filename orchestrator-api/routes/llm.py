@@ -1,24 +1,21 @@
+import json
 from fastapi import APIRouter, HTTPException, status
-from schemas.chat import ChatRequest, Metrics
-from services.classifier_service import ClassifierService
 from services.llm_service import LLMService
+from schemas.chat import JustifyRequest
 
 router = APIRouter()
 
-# Instanciamos ambos servicios
 llm_service = LLMService()
-classifier_service = ClassifierService()
 
-@router.post("/justify-recommendation", response_model=Metrics)
-def parametrize_request(request: ChatRequest):
-
+@router.post("/justify-results")
+async def justify_results(payload: JustifyRequest):
     try:
-        # Llamada al nuevo servicio local
-        metrics_dict = classifier_service.parametrize_text(request.prompt)
-        return Metrics(**metrics_dict)
-        
+        text = json.dumps(payload.text)
+        result = await llm_service.justify_result(text)
+        return {"justification": result}
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Error generando la justificación: {str(e)}"
         )
