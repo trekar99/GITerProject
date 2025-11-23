@@ -70,7 +70,7 @@ class RecommendationService:
                     best_col = max(columnas, key=lambda c: df.loc[idx, c])
                     aportes_por_barrio[idx][best_col] = score_contribution[idx]
 
-        # 3. PENALIZACIÓN POR PRECIO (Opcional pero recomendado para realismo)
+        # 3. PENALIZACIÓN POR PRECIO
         # Si no has pedido lujo explícitamente, penalizamos los barrios carísimos
         if user_weights.get('luxury_exclusivity', 0) < 0.4:
             if 'Avg_price' in df.columns:
