@@ -11,9 +11,9 @@ app = FastAPI(
 
 # --- CONFIGURACIÓN CORS (CRUCIAL PARA QUE EL FRONTEND SE CONECTE) ---
 origins = [
-    "http://localhost:5173", # Puerto por defecto de Vite
-    "http://localhost:3000", # Por si acaso
-    "http://127.0.0.1:5173"
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://79.143.89.115:5173"
 ]
 
 app.add_middleware(

@@ -6,3 +6,4 @@ pydantic-settings
 python-dotenv
 transformers
 torch
+huggingface_hub
