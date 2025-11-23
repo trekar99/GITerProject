@@ -1,19 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
 from schemas.chat import ChatRequest, Metrics
 from services.classifier_service import ClassifierService
-from services.llm_service import LLMService
 
 router = APIRouter()
 
 # Instanciamos ambos servicios
-llm_service = LLMService()
 classifier_service = ClassifierService()
 
-@router.post("/justify-recommendation", response_model=Metrics)
+@router.post("/parametrize", response_model=Metrics)
 def parametrize_request(request: ChatRequest):
-
     try:
-        # Llamada al nuevo servicio local
         metrics_dict = classifier_service.parametrize_text(request.prompt)
         return Metrics(**metrics_dict)
         

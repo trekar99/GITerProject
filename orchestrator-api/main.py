@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # <--- IMPORTANTE
-from routes import llm
+from routes import llm, classify, recommend
 import uvicorn
 
 app = FastAPI(
@@ -27,6 +27,8 @@ app.add_middleware(
 
 # Registrar rutas
 app.include_router(llm.router, prefix="/api/llm", tags=["LLM"])
+app.include_router(classify.router, prefix="/api/", tags=["LLM"])
+app.include_router(recommend.router, prefix="/api/", tags=["LLM"])
 
 @app.get("/health")
 async def health_check():

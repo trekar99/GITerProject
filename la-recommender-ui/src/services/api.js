@@ -2,7 +2,7 @@
 import laNeighborhoodsData from '../data/Neighborhood_Councils_(Certified).json';
 
 // URL DE TU BACKEND
-const API_URL = 'http://79.143.89.115:8000/api/llm';
+const API_URL = 'http://79.143.89.115:8000/api';
 
 // Datos estáticos de los barrios (Stats del 0 al 100, así que encajan con la conversión que haremos)
 export const MOCK_NEIGHBORHOODS = {
